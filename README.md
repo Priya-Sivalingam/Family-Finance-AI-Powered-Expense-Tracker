@@ -51,23 +51,6 @@ A free, private, mobile-first Progressive Web App (PWA) for tracking family expe
    https://yourusername.github.io/family-finance
    ```
 
-### Option B: Vercel
-
-1. Create a free account at [vercel.com](https://vercel.com)
-2. Click **Add New Project** → **Browse** → upload the HTML file (renamed to `index.html`)
-3. Click **Deploy** → your app is live at:
-   ```
-   https://your-project-name.vercel.app
-   ```
-
-### Option C: Netlify
-
-1. Go to [netlify.com](https://netlify.com) → sign up free
-2. Drag and drop the `index.html` file onto the Netlify dashboard
-3. App is instantly live at a `netlify.app` URL
-
----
-
 ## 🤖 AI Setup — Free Gemini API Key
 
 The app uses **Google Gemini 2.0 Flash** — free tier gives **1,500 messages/day** (a typical family uses ~10–20/day).
