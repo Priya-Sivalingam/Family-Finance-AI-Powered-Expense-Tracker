@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="theme-color" content="#1a1a2e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Family Finance"/>
+<title>Family Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f1a;
+  --bg2:#1a1a2e;
+  --bg3:#222238;
+  --bg4:#2a2a45;
+  --accent:#6c63ff;
+  --accent2:#a78bfa;
+  --green:#22c55e;
+  --red:#f87171;
+  --amber:#fbbf24;
+  --text:#f0f0ff;
+  --text2:#a0a0c0;
+  --text3:#606080;
+  --border:rgba(255,255,255,0.08);
+  --radius:16px;
+  --radius-sm:10px;
+  --nav-h:72px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+
+/* Screens */
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 calc(var(--nav-h) + var(--safe-bottom));display:none;flex-direction:column}
+.screen.active{display:flex}
+.screen::-webkit-scrollbar{display:none}
+
+/* Header */
+.topbar{padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px;flex-shrink:0}
+.topbar-row{display:flex;align-items:center;justify-content:space-between}
+.app-label{font-size:11px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;margin-bottom:2px}
+.balance-big{font-size:32px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-1px}
+.balance-big.pos{color:var(--green)}
+.balance-big.neg{color:var(--red)}
+.month-chips{display:flex;gap:8px;margin-top:12px}
+.chip{font-size:12px;padding:6px 12px;border-radius:20px;font-weight:500}
+.chip.income{background:rgba(34,197,94,0.15);color:var(--green)}
+.chip.expense{background:rgba(248,113,113,0.15);color:var(--red)}
+
+/* Bottom nav */
+#nav{height:var(--nav-h);padding-bottom:var(--safe-bottom);background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-shrink:0;position:relative;z-index:10}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:none;color:var(--text3);font-size:10px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:color 0.2s;padding:0}
+.nav-btn.active{color:var(--accent2)}
+.nav-icon{font-size:22px;line-height:1}
+
+/* Cards */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card+.card{margin-top:10px}
+.section-title{font-size:11px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:12px;font-weight:500}
+
+/* Chat */
+#chat-messages{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+#chat-messages::-webkit-scrollbar{display:none}
+.bubble{max-width:82%;padding:12px 14px;line-height:1.5;font-size:14px;animation:popin 0.2s ease}
+.bubble.bot{background:var(--bg3);border:1px solid var(--border);border-radius:4px 18px 18px 18px;color:var(--text);align-self:flex-start}
+.bubble.user{background:var(--accent);color:#fff;border-radius:18px 4px 18px 18px;align-self:flex-end;font-weight:500}
+.bubble.system{background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);border-radius:12px;color:var(--accent2);font-size:13px;align-self:center;max-width:90%;text-align:center}
+@keyframes popin{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.typing{display:flex;gap:4px;padding:14px;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* Chat input */
+.chat-input-area{padding:10px 12px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
+.quick-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.quick-pills::-webkit-scrollbar{display:none}
+.pill{font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all 0.15s}
+.pill:active{background:var(--bg4);transform:scale(0.97)}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+#chat-in{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:10px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;resize:none;min-height:40px;max-height:100px;line-height:1.4;outline:none}
+#chat-in:focus{border-color:var(--accent)}
+#send-btn{width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+#send-btn:active{transform:scale(0.92)}
+#send-btn:disabled{background:var(--bg4);color:var(--text3)}
+
+/* Dashboard */
+.dash-pad{padding:0 16px}
+.cat-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.cat-row:last-child{border-bottom:none}
+.cat-icon{font-size:22px;width:36px;text-align:center;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:13px;font-weight:500;color:var(--text)}
+.cat-bar-wrap{height:4px;background:var(--bg4);border-radius:2px;margin-top:5px}
+.cat-bar{height:100%;border-radius:2px;transition:width 0.5s ease}
+.cat-amt{text-align:right;flex-shrink:0}
+.cat-spent{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}
+.cat-budget{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* History */
+.hist-pad{padding:0 16px}
+.hist-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);animation:slidein 0.2s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.hist-icon{font-size:20px;width:36px;height:36px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hist-info{flex:1;min-width:0}
+.hist-desc{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-date{font-size:11px;color:var(--text3);margin-top:2px}
+.hist-amt{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
+.hist-amt.inc{color:var(--green)}
+.hist-amt.exp{color:var(--red)}
+.del-btn{background:none;border:none;color:var(--text3);font-size:16px;padding:4px 6px;cursor:pointer;flex-shrink:0}
+
+/* Budget / Settings */
+.settings-pad{padding:0 16px}
+.sett-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.sett-icon{font-size:20px;width:36px;text-align:center;flex-shrink:0}
+.sett-label{flex:1;font-size:14px;font-weight:500}
+.sett-input{width:110px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;text-align:right;outline:none}
+.sett-input:focus{border-color:var(--accent)}
+
+/* API key screen */
+#setup-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;max-width:430px;margin:0 auto}
+.setup-icon{font-size:64px;margin-bottom:24px}
+.setup-title{font-size:24px;font-weight:600;margin-bottom:8px}
+.setup-sub{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px}
+.setup-steps{background:var(--bg3);border-radius:var(--radius);padding:16px;margin-bottom:24px;text-align:left;width:100%}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;font-size:13px;color:var(--text2)}
+.step:last-child{margin-bottom:0}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step a{color:var(--accent2);text-decoration:none}
+#api-key-in{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:12px}
+#api-key-in:focus{border-color:var(--accent)}
+.primary-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.primary-btn:active{transform:scale(0.98)}
+.primary-btn:disabled{background:var(--bg4);color:var(--text3)}
+.skip-link{font-size:13px;color:var(--text3);margin-top:12px;cursor:pointer;text-decoration:underline}
+
+/* Summary stats row */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:16px}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.stat-val{font-size:18px;font-weight:600;font-family:'DM Mono',monospace}
+.stat-val.inc{color:var(--green)}
+.stat-val.exp{color:var(--red)}
+
+/* Month header */
+.month-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
+.month-hdr-title{font-size:12px;color:var(--text3);font-weight:500;letter-spacing:0.06em;text-transform:uppercase}
+.month-hdr-count{font-size:11px;color:var(--text3)}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 24px;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- Setup / API key screen -->
+<div id="setup-screen">
+  <div class="setup-icon">💰</div>
+  <div class="setup-title">Family Finance</div>
+  <div class="setup-sub">Your private family expense tracker.<br/>Powered by Google Gemini AI — free.</div>
+  <div class="setup-steps">
+    <div class="step"><div class="step-num">1</div><span>Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></span></div>
+    <div class="step"><div class="step-num">2</div><span>Sign in with any Google account</span></div>
+    <div class="step"><div class="step-num">3</div><span>Click <b>"Get API key"</b> → Create → Copy it</span></div>
+    <div class="step"><div class="step-num">4</div><span>Paste it below. Free — 1,500 messages/day.</span></div>
+  </div>
+  <input id="api-key-in" type="text" placeholder="Paste your Gemini API key here…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+  <button class="primary-btn" id="save-key-btn">Start Tracking →</button>
+  <div class="skip-link" onclick="skipSetup()">Skip for now (demo mode)</div>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- TOP BAR (shown on chat & dashboard) -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-row">
+      <div>
+        <div class="app-label">Family Finance</div>
+        <div class="balance-big" id="balance-display">Rs 0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px" id="month-label"></div>
+        <div style="font-size:11px;color:var(--text3)" id="txn-count-label"></div>
+      </div>
+    </div>
+    <div class="month-chips">
+      <div class="chip income" id="hdr-income">↑ Rs 0</div>
+      <div class="chip expense" id="hdr-expense">↓ Rs 0</div>
+    </div>
+  </div>
+
+  <!-- SCREEN: CHAT -->
+  <div class="screen active" id="screen-chat">
+    <div id="chat-messages"></div>
+    <div class="chat-input-area">
+      <div class="quick-pills">
+        <div class="pill" onclick="quickSend('What is my balance?')">Balance?</div>
+        <div class="pill" onclick="quickSend('Show this month summary')">Summary</div>
+        <div class="pill" onclick="quickSend('Undo last entry')">Undo</div>
+        <div class="pill" onclick="quickSend('What did I spend most on?')">Top category</div>
+      </div>
+      <div class="input-row">
+        <textarea id="chat-in" rows="1" placeholder="e.g. spent 2500 on groceries…" autocomplete="off"></textarea>
+        <button id="send-btn" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: DASHBOARD -->
+  <div class="screen" id="screen-dash">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Income</div><div class="stat-val inc" id="d-income">Rs 0</div></div>
+      <div class="stat-card"><div class="stat-label">Spent</div><div class="stat-val exp" id="d-expense">Rs 0</div></div>
+    </div>
+    <div class="dash-pad" id="cat-breakdown"></div>
+  </div>
+
+  <!-- SCREEN: HISTORY -->
+  <div class="screen" id="screen-hist">
+    <div class="month-hdr">
+      <div class="month-hdr-title" id="hist-month"></div>
+      <div class="month-hdr-count" id="hist-count"></div>
+    </div>
+    <div class="hist-pad" id="hist-list"></div>
+  </div>
+
+  <!-- SCREEN: BUDGET/SETTINGS -->
+  <div class="screen" id="screen-budget">
+    <div style="padding:16px 16px 8px">
+      <div class="section-title">Monthly budgets (Rs)</div>
+    </div>
+    <div class="settings-pad" id="budget-list"></div>
+    <div style="padding:16px">
+      <div class="section-title" style="margin-bottom:8px">Settings</div>
+      <div class="card" style="gap:0">
+        <div class="sett-item" style="border-bottom:none">
+          <div class="sett-icon">🔑</div>
+          <div class="sett-label" style="font-size:13px">Gemini API key</div>
+          <button onclick="changeApiKey()" style="background:var(--bg4);border:none;color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer">Change</button>
+        </div>
+        <div class="sett-item" style="border-bottom:none;border-top:1px solid var(--border)">
+          <div class="sett-icon">🗑️</div>
+          <div class="sett-label" style="font-size:13px;color:var(--red)">Clear all data</div>
+          <button onclick="clearAll()" style="background:rgba(248,113,113,0.15);border:none;color:var(--red);font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 16px 16px;font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
+      All data is stored on this device.<br/>Free forever — no server, no account needed.
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="nav">
+    <button class="nav-btn active" onclick="switchTab('chat',this)">
+      <div class="nav-icon">💬</div><span>Chat</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('dash',this)">
+      <div class="nav-icon">📊</div><span>Dashboard</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('hist',this)">
+      <div class="nav-icon">📋</div><span>History</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('budget',this)">
+      <div class="nav-icon">🎯</div><span>Budget</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const STORE_KEY_TXN = 'ff_txns_v3';
+const STORE_KEY_BUDGET = 'ff_budgets_v3';
+const STORE_KEY_API = 'ff_gemini_key';
+
+let txns = JSON.parse(localStorage.getItem(STORE_KEY_TXN) || '[]');
+let budgets = JSON.parse(localStorage.getItem(STORE_KEY_BUDGET) || '{}');
+let apiKey = localStorage.getItem(STORE_KEY_API) || '';
+let busy = false;
+
+const CATS = {
+  food:{label:'Food & Dining',icon:'🍽️',color:'#f87171'},
+  groceries:{label:'Groceries',icon:'🛒',color:'#4ade80'},
+  transport:{label:'Transport',icon:'🚗',color:'#60a5fa'},
+  utilities:{label:'Utilities',icon:'💡',color:'#fbbf24'},
+  health:{label:'Health',icon:'💊',color:'#f472b6'},
+  education:{label:'Education',icon:'📚',color:'#a78bfa'},
+  entertainment:{label:'Entertainment',icon:'🎬',color:'#34d399'},
+  clothing:{label:'Clothing',icon:'👕',color:'#fb923c'},
+  salary:{label:'Salary',icon:'💼',color:'#22c55e'},
+  freelance:{label:'Freelance',icon:'💻',color:'#38bdf8'},
+  other:{label:'Other',icon:'📦',color:'#94a3b8'},
+};
+
+// ─── Setup screen ────────────────────────────────────────────────────────────
+function initApp() {
+  if (!apiKey) {
+    document.getElementById('setup-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  } else {
+    showApp();
+  }
+}
+
+document.getElementById('save-key-btn').onclick = () => {
+  const k = document.getElementById('api-key-in').value.trim();
+  if (!k) return alert('Please enter your API key');
+  apiKey = k;
+  localStorage.setItem(STORE_KEY_API, k);
+  showApp();
+};
+
+function skipSetup() {
+  apiKey = 'demo';
+  showApp();
+}
+
+function changeApiKey() {
+  apiKey = '';
+  localStorage.removeItem(STORE_KEY_API);
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('api-key-in').value = '';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  renderAll();
+  addBotMsg("Hi! 👋 I'm your family finance assistant.\n\nJust type naturally:\n• \"spent 3500 on groceries\"\n• \"paid electricity 4200\"\n• \"received salary 95000\"\n• \"set food budget 20000\"\n• \"what's my balance?\"\n• \"show this month summary\"");
+}
+
+// ─── Persist ─────────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem(STORE_KEY_TXN, JSON.stringify(txns));
+  localStorage.setItem(STORE_KEY_BUDGET, JSON.stringify(budgets));
+}
+
+function clearAll() {
+  if (!confirm('Delete all transactions and budgets? This cannot be undone.')) return;
+  txns = []; budgets = {};
+  save(); renderAll();
+  addBotMsg("All data cleared. Fresh start! 🌱");
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const fmt = n => 'Rs ' + Math.round(Math.abs(n)).toLocaleString('en-LK');
+const now = () => new Date();
+
+function monthTxns() {
+  const d = now();
+  return txns.filter(t => {
+    const td = new Date(t.date);
+    return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear();
+  });
+}
+
+function calcStats(list) {
+  const income = list.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense = list.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  return {income, expense, balance: income - expense};
+}
+
+function catSpend(list) {
+  const m = {};
+  list.filter(t=>t.type==='expense').forEach(t => { m[t.category]=(m[t.category]||0)+t.amount; });
+  return m;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderAll() { renderHeader(); renderDash(); renderHist(); renderBudget(); }
+
+function renderHeader() {
+  const mt = monthTxns();
+  const {income, expense, balance} = calcStats(mt);
+  const total = calcStats(txns).balance;
+  const balEl = document.getElementById('balance-display');
+  balEl.textContent = (total < 0 ? '−' : '') + fmt(total);
+  balEl.className = 'balance-big ' + (total >= 0 ? 'pos' : 'neg');
+  document.getElementById('hdr-income').textContent = '↑ ' + fmt(income);
+  document.getElementById('hdr-expense').textContent = '↓ ' + fmt(expense);
+  document.getElementById('month-label').textContent = now().toLocaleString('default',{month:'long',year:'numeric'});
+  document.getElementById('txn-count-label').textContent = mt.length + ' transactions';
+}
+
+function renderDash() {
+  const mt = monthTxns();
+  const {income, expense} = calcStats(mt);
+  document.getElementById('d-income').textContent = fmt(income);
+  document.getElementById('d-expense').textContent = fmt(expense);
+  const cs = catSpend(mt);
+  const cont = document.getElementById('cat-breakdown');
+  if (!Object.keys(cs).length) {
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">No expenses this month yet.<br/>Start chatting to track them!</div></div>';
+    return;
+  }
+  const sorted = Object.entries(cs).sort(([,a],[,b])=>b-a);
+  cont.innerHTML = '<div class="card" style="padding:8px 12px">' +
+    sorted.map(([cat, spent]) => {
+      const c = CATS[cat] || CATS.other;
+      const budget = budgets[cat];
+      const pct = budget ? Math.min(100, Math.round(spent/budget*100)) : null;
+      const over = budget && spent > budget;
+      return `<div class="cat-row">
+        <div class="cat-icon">${c.icon}</div>
+        <div class="cat-info">
+          <div class="cat-name">${c.label}</div>
+          ${pct!==null ? `<div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${over?'var(--red)':c.color}"></div></div>` : ''}
+        </div>
+        <div class="cat-amt">
+          <div class="cat-spent" style="color:${over?'var(--red)':c.color}">${fmt(spent)}</div>
+          ${budget ? `<div class="cat-budget">/ ${fmt(budget)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function renderHist() {
+  const mt = monthTxns();
+  document.getElementById('hist-month').textContent = now().toLocaleString('default',{month:'long',year:'numeric'});
+  document.getElementById('hist-count').textContent = mt.length + ' entries';
+  const cont = document.getElementById('hist-list');
+  if (!mt.length) {
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No entries this month yet.</div></div>';
+    return;
+  }
+  cont.innerHTML = [...mt].reverse().map(t => {
+    const c = CATS[t.category] || CATS.other;
+    const d = new Date(t.date);
+    const dateStr = d.toLocaleDateString('en-LK',{day:'numeric',month:'short'}) + ' ' + d.toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="hist-item">
+      <div class="hist-icon">${c.icon}</div>
+      <div class="hist-info">
+        <div class="hist-desc">${t.desc || c.label}</div>
+        <div class="hist-date">${dateStr}</div>
+      </div>
+      <div class="hist-amt ${t.type==='income'?'inc':'exp'}">${t.type==='income'?'+':'−'}${fmt(t.amount)}</div>
+      <button class="del-btn" onclick="deleteTxn(${t.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function renderBudget() {
+  const expenseCats = Object.keys(CATS).filter(c=>c!=='salary'&&c!=='freelance');
+  const cs = catSpend(monthTxns());
+  document.getElementById('budget-list').innerHTML =
+    expenseCats.map(cat => {
+      const c = CATS[cat];
+      const over = budgets[cat] && (cs[cat]||0) > budgets[cat];
+      return `<div class="sett-item">
+        <div class="sett-icon">${c.icon}</div>
+        <div class="sett-label" style="font-size:13px">${c.label}</div>
+        <input class="sett-input" type="number" placeholder="No limit" value="${budgets[cat]||''}"
+          style="${over?'border-color:var(--red);color:var(--red)':''}"
+          onchange="saveBudget('${cat}',this.value)" />
+      </div>`;
+    }).join('');
+}
+
+function saveBudget(cat, val) {
+  const n = parseFloat(val);
+  if (n > 0) budgets[cat] = n; else delete budgets[cat];
+  save(); renderDash(); renderBudget();
+}
+
+function deleteTxn(id) {
+  txns = txns.filter(t=>t.id!==id);
+  save(); renderAll();
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='dash') renderDash();
+  if (name==='hist') renderHist();
+  if (name==='budget') renderBudget();
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+function addBotMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'bubble bot';
+  el.style.whiteSpace = 'pre-wrap';
+  el.textContent = text;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollChat();
+}
+function addUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'bubble user';
+  el.textContent = text;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollChat();
+}
+function addSystemMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'bubble system';
+  el.textContent = text;
+  document.getElementById('chat-messages').appendChild(el);
+  scrollChat();
+}
+function showTyping() {
+  const el = document.createElement('div');
+  el.className = 'bubble bot typing';
+  el.id = 'typing-ind';
+  el.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  document.getElementById('chat-messages').appendChild(el);
+  scrollChat();
+}
+function hideTyping() {
+  document.getElementById('typing-ind')?.remove();
+}
+function scrollChat() {
+  const c = document.getElementById('chat-messages');
+  setTimeout(()=>c.scrollTop=c.scrollHeight,50);
+}
+
+function quickSend(text) {
+  document.getElementById('chat-in').value = text;
+  sendMsg();
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('chat-in');
+  const text = inp.value.trim();
+  if (!text || busy) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+  addUserMsg(text);
+  busy = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  if (apiKey === 'demo') {
+    hideTyping();
+    addBotMsg("Demo mode: add a real Gemini API key in Budget → Settings to enable AI parsing.\n\nGet it free at aistudio.google.com");
+    busy = false;
+    document.getElementById('send-btn').disabled = false;
+    return;
+  }
+
+  const mt = monthTxns();
+  const {income, expense, balance} = calcStats(txns);
+  const cs = catSpend(mt);
+
+  const systemPrompt = `You are a warm, helpful family finance assistant for a Sri Lankan family (currency Rs/LKR).
+Parse the user message and return ONLY valid JSON — no markdown, no explanation.
+
+Current context:
+- Overall balance: Rs ${balance.toLocaleString()}
+- This month income: Rs ${calcStats(mt).income.toLocaleString()}
+- This month expenses: Rs ${calcStats(mt).expense.toLocaleString()}
+- Category spending this month: ${JSON.stringify(cs)}
+- Monthly budgets: ${JSON.stringify(budgets)}
+- Last 8 transactions: ${JSON.stringify(txns.slice(-8).map(t=>({type:t.type,amount:t.amount,cat:t.category,desc:t.desc,date:t.date.slice(0,10)})))}
+
+Return exactly ONE JSON shape:
+
+Expense: {"action":"expense","amount":number,"category":"food|groceries|transport|utilities|health|education|entertainment|clothing|other","desc":"string","reply":"friendly Sri Lankan warm confirmation, mention if over budget"}
+Income: {"action":"income","amount":number,"category":"salary|freelance|other","desc":"string","reply":"friendly confirmation"}
+Budget: {"action":"budget","category":"string","amount":number,"reply":"friendly confirmation"}
+Undo: {"action":"undo","reply":"string"}
+Info/Query: {"action":"info","reply":"detailed answer using exact Rs numbers from context"}
+
+Keep replies short (2-3 sentences max). Warm and friendly tone. Return ONLY JSON.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents: [{parts:[{text: systemPrompt + '\n\nUser message: ' + text}]}],
+        generationConfig: {maxOutputTokens: 300, temperature: 0.3}
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    raw = raw.replace(/```json\n?|```/g,'').trim();
+    let p;
+    try { p = JSON.parse(raw); }
+    catch { p = {action:'info', reply:"I didn't quite catch that. Try: \"spent 500 on food\" or \"received 50000 salary\"."}; }
+
+    hideTyping();
+
+    if (p.action === 'expense' && p.amount > 0) {
+      const t = {id: Date.now(), type:'expense', amount:p.amount, category:p.category||'other', desc:p.desc||'', date:new Date().toISOString()};
+      txns.push(t); save(); renderAll();
+      addBotMsg(p.reply);
+      addSystemMsg('✓ Recorded: −' + fmt(p.amount) + ' · ' + (CATS[p.category]||CATS.other).label);
+    } else if (p.action === 'income' && p.amount > 0) {
+      const t = {id: Date.now(), type:'income', amount:p.amount, category:p.category||'salary', desc:p.desc||'', date:new Date().toISOString()};
+      txns.push(t); save(); renderAll();
+      addBotMsg(p.reply);
+      addSystemMsg('✓ Recorded: +' + fmt(p.amount) + ' income');
+    } else if (p.action === 'budget' && p.category && p.amount > 0) {
+      budgets[p.category] = p.amount; save(); renderBudget(); renderDash();
+      addBotMsg(p.reply);
+    } else if (p.action === 'undo') {
+      if (txns.length > 0) { txns.pop(); save(); renderAll(); }
+      addBotMsg(p.reply || 'Last entry removed ✓');
+    } else {
+      addBotMsg(p.reply || "I'm not sure I understood. Please try again.");
+    }
+  } catch(e) {
+    hideTyping();
+    addBotMsg('Error: ' + (e.message || 'Something went wrong. Check your API key in Settings.'));
+  }
+
+  busy = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+// Auto-resize textarea
+document.getElementById('chat-in').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+document.getElementById('chat-in').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+// ─── PWA Manifest (injected dynamically) ────────────────────────────────────
+const manifest = {
+  name: "Family Finance",
+  short_name: "Finance",
+  description: "Family expense tracker with AI",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0f0f1a",
+  theme_color: "#1a1a2e",
+  orientation: "portrait",
+  icons: [
+    {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231a1a2e'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E💰%3C/text%3E%3C/svg%3E", sizes:"192x192", type:"image/svg+xml"},
+    {src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231a1a2e'/%3E%3Ctext x='256' y='350' font-size='280' text-anchor='middle'%3E💰%3C/text%3E%3C/svg%3E", sizes:"512x512", type:"image/svg+xml"}
+  ]
+};
+const blob = new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+const link = document.createElement('link');
+link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
+document.head.appendChild(link);
+
+// ─── Service Worker (inline) ─────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const sw = `
+    const CACHE = 'ff-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
+    self.addEventListener('fetch', e => {
+      if (e.request.url.includes('generativelanguage.googleapis.com')) return;
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/'))));
+    });
+  `;
+  const swBlob = new Blob([sw],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+initApp();
+</script>
+</body>
+</html>
