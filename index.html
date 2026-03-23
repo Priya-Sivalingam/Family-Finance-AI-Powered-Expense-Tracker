@@ -167,14 +167,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div id="setup-screen">
   <div class="setup-icon">💰</div>
   <div class="setup-title">Family Finance</div>
-  <div class="setup-sub">Your private family expense tracker.<br/>Powered by Google Gemini AI — free.</div>
+  <div class="setup-sub">Your private family expense tracker.<br/>Powered by Groq AI — free, works in Sri Lanka.</div>
   <div class="setup-steps">
-    <div class="step"><div class="step-num">1</div><span>Go to <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></span></div>
-    <div class="step"><div class="step-num">2</div><span>Sign in with any Google account</span></div>
-    <div class="step"><div class="step-num">3</div><span>Click <b>"Get API key"</b> → Create → Copy it</span></div>
-    <div class="step"><div class="step-num">4</div><span>Paste it below. Free — 1,500 messages/day.</span></div>
+    <div class="step"><div class="step-num">1</div><span>Go to <a href="https://console.groq.com" target="_blank">console.groq.com</a></span></div>
+    <div class="step"><div class="step-num">2</div><span>Sign up free — no credit card needed</span></div>
+    <div class="step"><div class="step-num">3</div><span>Go to <b>API Keys</b> → Create API key → Copy it</span></div>
+    <div class="step"><div class="step-num">4</div><span>Paste it below. Free — 14,400 messages/day.</span></div>
   </div>
-  <input id="api-key-in" type="text" placeholder="Paste your Gemini API key here…" autocomplete="off" autocorrect="off" spellcheck="false"/>
+  <input id="api-key-in" type="text" placeholder="Paste your Groq API key here…" autocomplete="off" autocorrect="off" spellcheck="false"/>
   <button class="primary-btn" id="save-key-btn">Start Tracking →</button>
   <div class="skip-link" onclick="skipSetup()">Skip for now (demo mode)</div>
 </div>
@@ -245,7 +245,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="card" style="gap:0">
         <div class="sett-item" style="border-bottom:none">
           <div class="sett-icon">🔑</div>
-          <div class="sett-label" style="font-size:13px">Gemini API key</div>
+          <div class="sett-label" style="font-size:13px">Groq API key</div>
           <button onclick="changeApiKey()" style="background:var(--bg4);border:none;color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer">Change</button>
         </div>
         <div class="sett-item" style="border-bottom:none;border-top:1px solid var(--border)">
@@ -281,7 +281,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 // ─── State ───────────────────────────────────────────────────────────────────
 const STORE_KEY_TXN = 'ff_txns_v3';
 const STORE_KEY_BUDGET = 'ff_budgets_v3';
-const STORE_KEY_API = 'ff_gemini_key';
+const STORE_KEY_API = 'ff_groq_key';
 
 let txns = JSON.parse(localStorage.getItem(STORE_KEY_TXN) || '[]');
 let budgets = JSON.parse(localStorage.getItem(STORE_KEY_BUDGET) || '{}');
@@ -546,7 +546,7 @@ async function sendMsg() {
 
   if (apiKey === 'demo') {
     hideTyping();
-    addBotMsg("Demo mode: add a real Gemini API key in Budget → Settings to enable AI parsing.\n\nGet it free at aistudio.google.com");
+    addBotMsg("Demo mode: add a real Groq API key in Budget → Settings to enable AI parsing.\n\nGet it free at console.groq.com — no credit card needed!");
     busy = false;
     document.getElementById('send-btn').disabled = false;
     return;
@@ -578,17 +578,22 @@ Info/Query: {"action":"info","reply":"detailed answer using exact Rs numbers fro
 Keep replies short (2-3 sentences max). Warm and friendly tone. Return ONLY JSON.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${apiKey}`},
       body: JSON.stringify({
-        contents: [{parts:[{text: systemPrompt + '\n\nUser message: ' + text}]}],
-        generationConfig: {maxOutputTokens: 300, temperature: 0.3}
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {role: 'system', content: systemPrompt},
+          {role: 'user', content: text}
+        ],
+        max_tokens: 300,
+        temperature: 0.3
       })
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    let raw = data.choices?.[0]?.message?.content || '{}';
     raw = raw.replace(/```json\n?|```/g,'').trim();
     let p;
     try { p = JSON.parse(raw); }
@@ -663,7 +668,7 @@ if ('serviceWorker' in navigator) {
     });
     self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });
     self.addEventListener('fetch', e => {
-      if (e.request.url.includes('generativelanguage.googleapis.com')) return;
+      if (e.request.url.includes('api.groq.com')) return;
       e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/'))));
     });
   `;
