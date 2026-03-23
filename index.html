@@ -255,25 +255,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
 
     <div style="padding:0 16px 8px">
-      <div class="section-title">☁️ Family sync (phone + laptop)</div>
-      <div class="card" style="padding:12px">
-        <div id="sync-status" style="font-size:12px;margin-bottom:10px;color:var(--text3)">Not configured</div>
+      <div class="section-title">☁️ Family sync — phone + laptop</div>
+      <div class="card" style="padding:14px">
+        <div id="sync-status" style="font-size:13px;font-weight:500;margin-bottom:12px;padding:8px 10px;border-radius:8px;background:var(--bg4)">Not configured</div>
 
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">JSONBin Master Key <span style="color:var(--text3)">(from jsonbin.io)</span></div>
-        <input id="jbin-key-in" type="text" placeholder="$2a$10$… paste master key" autocomplete="off" spellcheck="false"
-          style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;margin-bottom:8px"/>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Firebase Database URL</div>
+        <input id="fb-url-in" type="url" placeholder="https://your-project-default-rtdb.firebaseio.com" autocomplete="off" spellcheck="false"
+          style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;margin-bottom:10px"/>
 
-        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Bin ID <span style="color:var(--text3)">(leave empty first time — we'll create one)</span></div>
-        <input id="bin-id-in" type="text" placeholder="leave empty on first device" autocomplete="off" spellcheck="false"
-          style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;margin-bottom:10px"/>
+        <button onclick="setupSync()" style="background:var(--accent);border:none;color:#fff;font-size:14px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer;width:100%;margin-bottom:8px">Enable Sync →</button>
+        <button onclick="cloudPull().then(()=>renderAll())" style="background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:12px;padding:9px;border-radius:10px;cursor:pointer;width:100%">⟳ Pull from cloud now</button>
 
-        <button onclick="setupSync()" style="background:var(--accent);border:none;color:#fff;font-size:13px;font-weight:500;padding:10px;border-radius:10px;cursor:pointer;width:100%;margin-bottom:8px">Enable Family Sync →</button>
-        <button onclick="cloudPull();renderAll();" style="background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:12px;padding:8px;border-radius:10px;cursor:pointer;width:100%">⟳ Pull latest from cloud now</button>
-
-        <div id="bin-id-display" style="display:none;margin-top:10px;background:var(--bg4);border-radius:8px;padding:10px">
-          <div style="font-size:11px;color:var(--amber);margin-bottom:4px">📋 Your Bin ID — copy this to other devices:</div>
-          <div id="bin-id-value" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text);word-break:break-all"></div>
-          <button onclick="copyBinId()" style="margin-top:8px;background:var(--accent);border:none;color:#fff;font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer">Copy Bin ID</button>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text3);line-height:1.7">
+            <b style="color:var(--text2)">How to get your Firebase URL (free, 2 min):</b><br/>
+            1. Go to <span style="color:var(--accent2)">console.firebase.google.com</span><br/>
+            2. Add project → give any name → Continue<br/>
+            3. Build → Realtime Database → Create database<br/>
+            4. Choose <b>Asia-Southeast</b> region → Start in <b>test mode</b> → Enable<br/>
+            5. Copy the URL shown (ends in .firebaseio.com)<br/>
+            6. Paste above → tap Enable Sync →<br/>
+            7. Do the same on your other device with the same URL ✓
+          </div>
         </div>
       </div>
     </div>
@@ -314,14 +317,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 const STORE_KEY_TXN    = 'ff_txns_v3';
 const STORE_KEY_BUDGET = 'ff_budgets_v3';
 const STORE_KEY_API    = 'ff_groq_key';
-const STORE_KEY_JBIN   = 'ff_jsonbin_key';
-const STORE_KEY_BINID  = 'ff_bin_id';
+const STORE_KEY_FBURL  = 'ff_firebase_url';
 
 let txns    = JSON.parse(localStorage.getItem(STORE_KEY_TXN)    || '[]');
 let budgets = JSON.parse(localStorage.getItem(STORE_KEY_BUDGET) || '{}');
 let apiKey  = localStorage.getItem(STORE_KEY_API)  || '';
-let jbinKey = localStorage.getItem(STORE_KEY_JBIN) || '';
-let binId   = localStorage.getItem(STORE_KEY_BINID)|| '';
+let fbUrl   = localStorage.getItem(STORE_KEY_FBURL)|| '';   // e.g. https://xxx-default-rtdb.firebaseio.com
 let busy    = false;
 let syncing = false;
 
@@ -408,14 +409,14 @@ function showApp() {
   document.getElementById('app').style.display = 'flex';
   renderAll();
   addBotMsg("Hi! 👋 I'm your family finance assistant.\n\nJust type naturally:\n• \"spent 3500 on groceries\"\n• \"paid electricity 4200\"\n• \"received salary 95000\"\n• \"set food budget 20000\"\n• \"what's my balance?\"\n• \"show this month summary\"");
-  if (jbinKey && binId) {
-    cloudPull();
+  if (fbUrl) {
+    cloudPull().then(() => renderAll());
   } else {
-    setSyncStatus('No sync — see Budget → Sync', 'var(--text3)');
+    setSyncStatus('No sync — go to Budget → Sync to set up', 'var(--text3)');
   }
 }
 
-// ─── Persist (local + cloud sync) ─────────────────────────────────────────────
+// ─── Persist (local + Firebase sync) ─────────────────────────────────────────
 function save() {
   localStorage.setItem(STORE_KEY_TXN,    JSON.stringify(txns));
   localStorage.setItem(STORE_KEY_BUDGET, JSON.stringify(budgets));
@@ -429,62 +430,62 @@ function setSyncStatus(msg, color) {
   if (chip) { chip.textContent = msg; chip.style.color = color || 'var(--text3)'; }
 }
 
+function fbEndpoint() {
+  if (!fbUrl) return null;
+  const base = fbUrl.replace(/\/+$/, '');
+  return base + '/family-finance.json';
+}
+
 async function cloudPush() {
-  if (!jbinKey || !binId || syncing) return;
+  const ep = fbEndpoint();
+  if (!ep || syncing) return;
   syncing = true;
-  setSyncStatus('⟳ Syncing…', 'var(--amber)');
+  setSyncStatus('⟳ Saving…', 'var(--amber)');
   try {
-    const r = await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+    const r = await fetch(ep, {
       method: 'PUT',
-      headers: {'Content-Type':'application/json','X-Master-Key': jbinKey,'X-Bin-Versioning':'false'},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({txns, budgets, updated: Date.now()})
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const t = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
-    setSyncStatus('✓ Saved ' + t, 'var(--green)');
+    if (!r.ok) { const t = await r.text(); throw new Error('HTTP ' + r.status + ' ' + t.slice(0,80)); }
+    const time = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('✓ Saved ' + time, 'var(--green)');
   } catch(e) {
-    setSyncStatus('✗ Sync failed', 'var(--red)');
+    setSyncStatus('✗ ' + (e.message||'push failed'), 'var(--red)');
   }
   syncing = false;
 }
 
 async function cloudPull() {
-  if (!jbinKey || !binId) return false;
-  setSyncStatus('⟳ Loading from cloud…', 'var(--amber)');
+  const ep = fbEndpoint();
+  if (!ep) return false;
+  setSyncStatus('⟳ Syncing…', 'var(--amber)');
   try {
-    const r = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
-      headers: {'X-Master-Key': jbinKey}
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const r = await fetch(ep);
+    if (!r.ok) { const t = await r.text(); throw new Error('HTTP ' + r.status + ' ' + t.slice(0,80)); }
     const d = await r.json();
-    if (d.record) {
-      txns    = d.record.txns    || [];
-      budgets = d.record.budgets || {};
-      localStorage.setItem(STORE_KEY_TXN,    JSON.stringify(txns));
-      localStorage.setItem(STORE_KEY_BUDGET, JSON.stringify(budgets));
-      renderAll();
-      const t = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
-      setSyncStatus('✓ Updated ' + t, 'var(--green)');
+    if (d && (d.txns || d.budgets)) {
+      const cloudTxns    = d.txns    || [];
+      const cloudBudgets = d.budgets || {};
+      const cloudTime    = d.updated || 0;
+      const localTime    = parseInt(localStorage.getItem('ff_last_push') || '0');
+      if (cloudTime >= localTime) {
+        txns    = cloudTxns;
+        budgets = cloudBudgets;
+        localStorage.setItem(STORE_KEY_TXN,    JSON.stringify(txns));
+        localStorage.setItem(STORE_KEY_BUDGET, JSON.stringify(budgets));
+      }
+      const time = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
+      setSyncStatus('✓ Updated ' + time, 'var(--green)');
       return true;
+    } else {
+      setSyncStatus('Cloud empty — push data first', 'var(--text3)');
+      return false;
     }
   } catch(e) {
-    setSyncStatus('✗ ' + e.message, 'var(--red)');
+    setSyncStatus('✗ ' + (e.message||'pull failed'), 'var(--red)');
+    return false;
   }
-  return false;
-}
-
-async function createNewBin() {
-  if (!jbinKey) return null;
-  try {
-    const r = await fetch('https://api.jsonbin.io/v3/b', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','X-Master-Key': jbinKey,'X-Bin-Name':'family-finance'},
-      body: JSON.stringify({txns:[], budgets:{}, updated: Date.now()})
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    return d.metadata?.id || null;
-  } catch(e) { return null; }
 }
 
 function clearAll() {
@@ -617,25 +618,17 @@ function renderBudget() {
       : 'No key saved yet';
     statusEl.style.color = apiKey && apiKey !== 'demo' ? 'var(--green)' : 'var(--red)';
   }
-  const jbinEl   = document.getElementById('jbin-key-in');
-  const binIdEl  = document.getElementById('bin-id-in');
-  const syncEl   = document.getElementById('sync-status');
-  const binDisp  = document.getElementById('bin-id-display');
-  const binVal   = document.getElementById('bin-id-value');
-  if (jbinEl)  jbinEl.placeholder  = jbinKey ? jbinKey.slice(0,10)+'••••' : '$2a$10$… paste master key';
-  if (binIdEl) binIdEl.placeholder = binId   ? binId   : 'leave empty on first device';
+  const fbUrlEl = document.getElementById('fb-url-in');
+  const syncEl  = document.getElementById('sync-status');
+  if (fbUrlEl && fbUrl) fbUrlEl.placeholder = fbUrl.slice(0,30)+'…';
   if (syncEl) {
-    if (jbinKey && binId) {
-      syncEl.textContent = '✓ Sync enabled — Bin: ' + binId.slice(0,8)+'…';
+    if (fbUrl) {
+      syncEl.textContent = '✓ Sync ON — ' + fbUrl.replace('https://','').slice(0,30)+'…';
       syncEl.style.color = 'var(--green)';
     } else {
-      syncEl.textContent = 'Not configured — set up below to sync between devices';
+      syncEl.textContent = 'Not configured — paste your Firebase URL below';
       syncEl.style.color = 'var(--text3)';
     }
-  }
-  if (binDisp && binVal && binId) {
-    binDisp.style.display = 'block';
-    binVal.textContent = binId;
   }
 }
 
@@ -651,49 +644,24 @@ function deleteTxn(id) {
 }
 
 async function setupSync() {
-  const k = document.getElementById('jbin-key-in').value.trim();
-  const b = document.getElementById('bin-id-in').value.trim();
-  const syncEl = document.getElementById('sync-status');
-  if (!k) { if(syncEl){syncEl.textContent='Enter your JSONBin Master Key first';syncEl.style.color='var(--red)';} return; }
-  jbinKey = k;
-  localStorage.setItem(STORE_KEY_JBIN, k);
-  if (syncEl) { syncEl.textContent = '⟳ Setting up…'; syncEl.style.color = 'var(--amber)'; }
-  if (b) {
-    binId = b;
-    localStorage.setItem(STORE_KEY_BINID, b);
-    const ok = await cloudPull();
-    if (ok) {
-      if(syncEl){syncEl.textContent='✓ Sync enabled! Data loaded from cloud.';syncEl.style.color='var(--green)';}
-      renderBudget();
-    } else {
-      if(syncEl){syncEl.textContent='✗ Could not load bin. Check Bin ID & Master Key.';syncEl.style.color='var(--red)';}
-    }
-  } else {
-    if(syncEl){syncEl.textContent='⟳ Creating new cloud bin…';syncEl.style.color='var(--amber)';}
-    const newId = await createNewBin();
-    if (newId) {
-      binId = newId;
-      localStorage.setItem(STORE_KEY_BINID, newId);
-      const dispEl = document.getElementById('bin-id-display');
-      const valEl  = document.getElementById('bin-id-value');
-      if (dispEl) dispEl.style.display = 'block';
-      if (valEl)  valEl.textContent = newId;
-      if(syncEl){syncEl.textContent='✓ Bin created! Copy the Bin ID below for other devices.';syncEl.style.color='var(--green)';}
-      await cloudPush();
-    } else {
-      if(syncEl){syncEl.textContent='✗ Failed to create bin. Check Master Key.';syncEl.style.color='var(--red)';}
-    }
+  const urlRaw = document.getElementById('fb-url-in').value.trim();
+  if (!urlRaw) { setSyncStatus('Paste your Firebase URL first', 'var(--red)'); return; }
+  const url = urlRaw.replace(/\/+$/, '');
+  if (!url.includes('firebaseio.com') && !url.includes('firebasedatabase.app')) {
+    setSyncStatus('URL should contain firebaseio.com or firebasedatabase.app', 'var(--red)'); return;
   }
-}
-
-function copyBinId() {
-  if (!binId) return;
-  navigator.clipboard.writeText(binId).then(() => {
-    const btn = document.querySelector('[onclick="copyBinId()"]');
-    if (btn) { const orig = btn.textContent; btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent=orig,2000); }
-  }).catch(() => {
-    prompt('Copy this Bin ID:', binId);
-  });
+  fbUrl = url;
+  localStorage.setItem(STORE_KEY_FBURL, url);
+  setSyncStatus('⟳ Testing connection…', 'var(--amber)');
+  const ok = await cloudPull();
+  if (ok) {
+    setSyncStatus('✓ Sync enabled! Data loaded.', 'var(--green)');
+    renderAll();
+  } else {
+    await cloudPush();
+    setSyncStatus('✓ Sync enabled! Data uploaded.', 'var(--green)');
+  }
+  renderBudget();
 }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -899,21 +867,21 @@ if ('serviceWorker' in navigator) {
 
 // Pull when user comes back to the browser tab / app (e.g. switched from another app)
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && jbinKey && binId) {
+  if (document.visibilityState === 'visible' && fbUrl) {
     cloudPull().then(() => renderAll());
   }
 });
 
 // Pull when window regains focus (laptop switching windows, phone unlocking)
 window.addEventListener('focus', () => {
-  if (jbinKey && binId) {
+  if (fbUrl) {
     cloudPull().then(() => renderAll());
   }
 });
 
 // Pull every 30 seconds while app is open and visible
 setInterval(() => {
-  if (document.visibilityState === 'visible' && jbinKey && binId && !syncing) {
+  if (document.visibilityState === 'visible' && fbUrl && !syncing) {
     cloudPull().then(() => renderAll());
   }
 }, 30000);
