@@ -243,10 +243,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <div style="padding:16px">
       <div class="section-title" style="margin-bottom:8px">Settings</div>
       <div class="card" style="gap:0">
-        <div class="sett-item" style="border-bottom:none">
-          <div class="sett-icon">🔑</div>
-          <div class="sett-label" style="font-size:13px">Groq API key</div>
-          <button onclick="changeApiKey()" style="background:var(--bg4);border:none;color:var(--text2);font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer">Change</button>
+        <div style="padding:12px 0 8px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Groq API key</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <input id="inline-key-input" type="text" placeholder="gsk_..." autocomplete="off" autocorrect="off" spellcheck="false"
+              style="flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none"/>
+            <button onclick="saveInlineKey()" style="background:var(--accent);border:none;color:#fff;font-size:12px;padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:500;white-space:nowrap">Save</button>
+          </div>
+          <div id="key-status" style="font-size:12px;color:var(--text3);min-height:16px"></div>
+          <button onclick="testApiKey()" style="margin-top:8px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:12px;padding:7px 14px;border-radius:10px;cursor:pointer;width:100%">🔌 Test connection</button>
         </div>
         <div class="sett-item" style="border-bottom:none;border-top:1px solid var(--border)">
           <div class="sett-icon">🗑️</div>
@@ -331,6 +336,39 @@ function changeApiKey() {
   document.getElementById('setup-screen').style.display = 'flex';
   document.getElementById('api-key-in').value = '';
   document.getElementById('app').style.display = 'none';
+}
+
+function saveInlineKey() {
+  const inp = document.getElementById('inline-key-input');
+  const k = inp.value.trim();
+  if (!k) { showKeyStatus('Please paste your key first', 'var(--red)'); return; }
+  if (!k.startsWith('gsk_')) { showKeyStatus('Key should start with gsk_', 'var(--amber)'); return; }
+  apiKey = k;
+  localStorage.setItem(STORE_KEY_API, k);
+  inp.value = '';
+  showKeyStatus('✓ Key saved: ' + k.slice(0,8) + '••••••••' + k.slice(-4), 'var(--green)');
+}
+
+function showKeyStatus(msg, color) {
+  const el = document.getElementById('key-status');
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+
+async function testApiKey() {
+  if (!apiKey || apiKey === 'demo') { showKeyStatus('No key saved yet — paste and save first', 'var(--red)'); return; }
+  showKeyStatus('Testing…', 'var(--text3)');
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'Reply with just the word OK'}],max_tokens:5})
+    });
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message);
+    showKeyStatus('✓ Connected! Key works perfectly.', 'var(--green)');
+  } catch(e) {
+    showKeyStatus('✗ ' + (e.message || 'Connection failed'), 'var(--red)');
+  }
 }
 
 function showApp() {
@@ -465,6 +503,17 @@ function renderBudget() {
           onchange="saveBudget('${cat}',this.value)" />
       </div>`;
     }).join('');
+  const keyEl = document.getElementById('inline-key-input');
+  const statusEl = document.getElementById('key-status');
+  if (keyEl && statusEl) {
+    keyEl.placeholder = apiKey && apiKey !== 'demo'
+      ? apiKey.slice(0,8) + '••••••••' + apiKey.slice(-4)
+      : 'gsk_… paste your Groq key here';
+    statusEl.textContent = apiKey && apiKey !== 'demo'
+      ? 'Key stored: ' + apiKey.slice(0,8) + '••••••••' + apiKey.slice(-4)
+      : 'No key saved yet';
+    statusEl.style.color = apiKey && apiKey !== 'demo' ? 'var(--green)' : 'var(--red)';
+  }
 }
 
 function saveBudget(cat, val) {
