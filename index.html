@@ -440,8 +440,8 @@ async function cloudPush() {
       body: JSON.stringify({txns, budgets, updated: Date.now()})
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    setSyncStatus('✓ Synced', 'var(--green)');
-    setTimeout(() => setSyncStatus('Cloud sync on', 'var(--green)'), 2000);
+    const t = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('✓ Saved ' + t, 'var(--green)');
   } catch(e) {
     setSyncStatus('✗ Sync failed', 'var(--red)');
   }
@@ -463,8 +463,8 @@ async function cloudPull() {
       localStorage.setItem(STORE_KEY_TXN,    JSON.stringify(txns));
       localStorage.setItem(STORE_KEY_BUDGET, JSON.stringify(budgets));
       renderAll();
-      setSyncStatus('✓ Synced', 'var(--green)');
-      setTimeout(() => setSyncStatus('Cloud sync on', 'var(--green)'), 2000);
+      const t = new Date().toLocaleTimeString('en-LK',{hour:'2-digit',minute:'2-digit'});
+      setSyncStatus('✓ Updated ' + t, 'var(--green)');
       return true;
     }
   } catch(e) {
@@ -702,9 +702,10 @@ function switchTab(name, btn) {
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name==='dash') renderDash();
-  if (name==='hist') renderHist();
-  if (name==='budget') renderBudget();
+  if (name==='dash')   { cloudPull().then(()=>renderDash()); }
+  if (name==='hist')   { cloudPull().then(()=>renderHist()); }
+  if (name==='budget') { renderBudget(); }
+  if (name==='chat')   { cloudPull().then(()=>renderAll()); }
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
@@ -893,6 +894,29 @@ if ('serviceWorker' in navigator) {
   const swBlob = new Blob([sw],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
 }
+
+// ─── Auto-sync triggers ───────────────────────────────────────────────────────
+
+// Pull when user comes back to the browser tab / app (e.g. switched from another app)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && jbinKey && binId) {
+    cloudPull().then(() => renderAll());
+  }
+});
+
+// Pull when window regains focus (laptop switching windows, phone unlocking)
+window.addEventListener('focus', () => {
+  if (jbinKey && binId) {
+    cloudPull().then(() => renderAll());
+  }
+});
+
+// Pull every 30 seconds while app is open and visible
+setInterval(() => {
+  if (document.visibilityState === 'visible' && jbinKey && binId && !syncing) {
+    cloudPull().then(() => renderAll());
+  }
+}, 30000);
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 initApp();
